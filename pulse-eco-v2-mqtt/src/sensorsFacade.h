@@ -7,17 +7,18 @@ namespace facade {
     struct SensorData
     {
         public:
-            int pm10 = INT_MIN;
-            int pm25 = INT_MIN;
-            int noise = INT_MIN;
-            int temperature = INT_MIN;
-            int humidity = INT_MIN;
+            int pm10 = -1;
+            int pm25 = -1;
+            int noise = -1;
+            int temperature = -1;
+            int humidity = -1;
 
-            int pressure = INT_MIN;
-            int altitude = INT_MIN;
-            int gasResistance = INT_MIN;
+            int pressure = -1;
+            int altitude = -1;
+            int gasResistance = -1;
 
             bool hasAnyData();
+            void printMeasurements();
     };
 
     class Sensors

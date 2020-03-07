@@ -1,53 +1,64 @@
 #include "helpers.h"
 #include <SoftwareSerial.h>
+#include <ESP8266HTTPClient.h>
 
 using namespace helpers;
+
+HTTPClient http;
 
 // Initializes the espClient.
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+int Util::countSplitCharacters(String *text, char splitChar)
+{
+  int returnValue = 0;
+  int index = -1;
 
-int  Util::countSplitCharacters(String* text, char splitChar) {
-    int returnValue = 0;
-    int index = -1;
+  while (true)
+  {
+    index = text->indexOf(splitChar, index + 1);
 
-    while (true) {
-        index = text->indexOf(splitChar, index + 1);
-
-        if(index > -1) {
-            returnValue+=1;
-        } else {
-            break;
-        }
+    if (index > -1)
+    {
+      returnValue += 1;
     }
+    else
+    {
+      break;
+    }
+  }
 
-    return returnValue;
+  return returnValue;
 }
 
+int Util::splitCommand(String *text, char splitChar, String returnValue[], int maxLen)
+{
+  int splitCount = Util::countSplitCharacters(text, splitChar);
+  if (splitCount + 1 > maxLen)
+  {
+    return -1;
+  }
 
-int  Util::splitCommand(String* text, char splitChar, String returnValue[], int maxLen) {
-    int splitCount = Util::countSplitCharacters(text, splitChar);
-    if (splitCount + 1 > maxLen) {
-        return -1;
-    }
+  int index = -1;
+  int index2;
 
-    int index = -1;
-    int index2;
-
-    for(int i = 0; i <= splitCount; i++) {
+  for (int i = 0; i <= splitCount; i++)
+  {
     //    index = text->indexOf(splitChar, index + 1);
-        index2 = text->indexOf(splitChar, index + 1);
+    index2 = text->indexOf(splitChar, index + 1);
 
-        if(index2 < 0) index2 = text->length();
-        returnValue[i] = text->substring(index+1, index2);
-        index = index2;
-    }
+    if (index2 < 0)
+      index2 = text->length();
+    returnValue[i] = text->substring(index + 1, index2);
+    index = index2;
+  }
 
-    return splitCount + 1;
+  return splitCount + 1;
 }
 
-String Util::getMacID() {
+String Util::getMacID()
+{
   uint8_t mac[WL_MAC_ADDR_LENGTH];
   WiFi.softAPmacAddress(mac);
   String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) + String(mac[WL_MAC_ADDR_LENGTH - 1], HEX);
@@ -56,73 +67,40 @@ String Util::getMacID() {
   return macID;
 }
 
-
-void MQTTClient::init(String channel, String tkn) {
-  // set the MQTT server
-  client.setServer(BBT, 1883);
-
-  channelName = channel;
-  token = tkn;
-
-  Serial.println("channelName, token=" + channelName + " " + token);
+void helpers::CustomClient::init(String dbName, String dbPassword, String location)
+{
+  m_dbName = dbName;
+  m_dbPassword = dbPassword;
+  m_location = location;
 }
 
-void MQTTClient::connect() {
-    if (!client.connected()) {
-        reconnect();
-    }
+void helpers::CustomClient::publish(facade::SensorData data)
+{
+  String payloadStr = "sensors_data,location=" + m_location + " temperature=" + data.temperature + ",pressure=" + data.pressure + ",humidity=" + data.humidity + ",noise=" + data.noise + ",pm10=" + data.pm10 + ",pm25=" + data.pm25 + ",gasResistance=" + data.gasResistance;
+  Serial.println("payloadStr: " + payloadStr);
 
-    if(!client.loop())
-        client.connect(helpers::Util::getMacID().c_str());
-}
+  String corlysisUrl = "http://corlysis.com:8087/write?db=" + m_dbName + "&u=token&p=" + m_dbPassword;
+  Serial.println("corlysisUrl: " + corlysisUrl);
 
+  http.begin(corlysisUrl);
+  //HTTPS variant - check ssh public key fingerprint
+  //sprintf(corlysisUrl, "https://corlysis.com:8086/write?db=%s&u=token&p=%s", dbName, dbPassword);
 
-void MQTTClient::reconnect() {
-     // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.println("Attempting MQTT connection... with token " + token);
-    
-    if (client.connect(helpers::Util::getMacID().c_str(), token.c_str(), "")) {
-      Serial.println("connected");  
+  //http.begin(corlysisUrl, "92:23:13:0D:59:68:58:83:E6:82:98:EB:18:D7:68:B5:C8:90:0D:03");
 
-      // Subscribe or resubscribe to a topic
-      // You can subscribe to more topics
-    
-    } else {
-      Serial.println("failed, rc=");
-      Serial.println(client.state());
-      Serial.println(" try again in 5 seconds");
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  int httpCode = http.POST(payloadStr);
+  Serial.print("http result:");
+  Serial.println(httpCode);
+  http.writeToStream(&Serial);
+  http.end();
 
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
+  if (httpCode == 204)
+  {
+    Serial.println("Data successfully sent.");
   }
-}
-
-void MQTTClient::publish(const char* resource, float data) {
-    if (data == INT_MIN) {
-    return;
+  else
+  {
+    Serial.println("Data were not sent. Check network connection.");
   }
-
-  DynamicJsonDocument doc(128);
-  doc["channel"] = channelName;
-  doc["resource"] = resource;
- 
-  if (PERSIST) {
-    doc["write"] = true;
-  }
-  doc["data"] = data;
-
-  // Now print the JSON into a char buffer
-  char buffer[128];
-  serializeJson(doc, buffer);
-
-  Serial.println("channel name is" + channelName);
-
-  // Create the topic to publish to
-  char topic[64];
-  sprintf(topic, "%s/%s", channelName.c_str(), resource);
-
-  // Now publish the char buffer to Beebotte
-  client.publish(topic, buffer);
 }

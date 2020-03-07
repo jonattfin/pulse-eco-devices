@@ -4,6 +4,8 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
+#include "sensorsFacade.h"
+
 // Documentation -> https://randomnerdtutorials.com/esp8266-and-node-red-with-mqtt/
 
 #define BBT "mqtt.beebotte.com"     // Domain name of Beebotte MQTT service
@@ -19,16 +21,15 @@ namespace helpers {
             static String getMacID();
     };
 
-    class MQTTClient
+    class CustomClient
     {
-        private:
-            String channelName;
-            String token;
-
         public:
-            void init(String channelName, String token);
-            void connect();
-            void reconnect();
-            void publish(const char* resource, float data);
+            void init(String dbName, String dbPassword, String location);
+            void publish(facade::SensorData data);
+
+        private:
+            String m_dbName;
+            String m_dbPassword;
+            String m_location;
     };
 }
