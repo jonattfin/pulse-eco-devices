@@ -8,8 +8,6 @@
 
 // Documentation -> https://randomnerdtutorials.com/esp8266-and-node-red-with-mqtt/
 
-#define BBT "mqtt.beebotte.com"     // Domain name of Beebotte MQTT service
-
 #define PERSIST true
 
 namespace helpers {

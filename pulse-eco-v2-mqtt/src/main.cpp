@@ -267,7 +267,6 @@ void setup()
     }
     else
     {
-
       // Connected to the network
 
       SH_DEBUG_PRINT("Connected to:");
@@ -276,9 +275,9 @@ void setup()
       SH_DEBUG_PRINTLN(WiFi.localIP());
       digitalWrite(STATUS_LED_PIN, HIGH);
 
-      // init the sensors
+      // init the sensors & client
       sensors.init();
-      customClient.init(dbName, dbPassword, "room1"); // TODO
+      customClient.init(dbName, dbPassword, location);
     }
   }
 

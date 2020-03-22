@@ -76,7 +76,18 @@ void helpers::CustomClient::init(String dbName, String dbPassword, String locati
 
 void helpers::CustomClient::publish(facade::SensorData data)
 {
-  String payloadStr = "sensors_data,location=" + m_location + " temperature=" + data.temperature + ",pressure=" + data.pressure + ",humidity=" + data.humidity + ",noise=" + data.noise + ",pm10=" + data.pm10 + ",pm25=" + data.pm25 + ",gasResistance=" + data.gasResistance;
+  String payloadStr = "sensors_data,location=" + m_location + " temperature=" + data.temperature + ",pressure=" + data.pressure + ",humidity=" + data.humidity + ",noise=" + data.noise + ",gasResistance=" + data.gasResistance;
+
+  if (data.pm10 > 0) {
+    String s1 = ",pm10=" + String(data.pm10);
+    payloadStr += s1;
+  }
+
+  if (data.pm25 > 0) {
+    String s1 = ",pm25=" + String(data.pm25);
+    payloadStr += s1;
+  }
+
   Serial.println("payloadStr: " + payloadStr);
 
   String corlysisUrl = "http://corlysis.com:8087/write?db=" + m_dbName + "&u=token&p=" + m_dbPassword;

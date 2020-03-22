@@ -5,7 +5,7 @@
 
 //Development / production profiles
 //#define NO_CONNECTION_PROFILE 1
-#define DEBUG_PROFILE 1
+// #define DEBUG_PROFILE 1
 
 #ifdef DEBUG_PROFILE
   #define NUM_MEASURE_SESSIONS 10
